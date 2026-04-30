@@ -1,0 +1,38 @@
+-- ---- 2E: FIX ISSUES — REMOVE FULLY DUPLICATE SALES ROWS ----
+
+SELECT '=== 2E-1: Count exact duplicate sales rows BEFORE cleaning ===' AS info;
+SELECT COUNT(*) AS total_exact_duplicates FROM (
+    SELECT sale_date, product_id, customer_id, total, rating, COUNT(*) AS cnt
+    FROM sales
+    GROUP BY sale_date, product_id, customer_id, total, rating
+    HAVING cnt > 1
+);
+
+-- Create a clean version of sales (keep only lowest sale_id per duplicate group)
+CREATE TABLE IF NOT EXISTS sales_clean AS
+SELECT * FROM sales
+WHERE sale_id IN (
+    SELECT MIN(sale_id)
+    FROM sales
+    GROUP BY sale_date, product_id, customer_id, total, rating
+);
+
+SELECT '=== 2E-2: Row count comparison ===' AS info;
+SELECT 'Original sales' AS table_name, COUNT(*) AS row_count FROM sales
+UNION ALL
+SELECT 'Cleaned sales', COUNT(*) FROM sales_clean;
+
+SELECT '=== 2E-3: Rows removed ===' AS info;
+SELECT (SELECT COUNT(*) FROM sales) - (SELECT COUNT(*) FROM sales_clean) AS rows_removed;
+
+-- ---- 2F: FLAG DUPLICATE CUSTOMERS (same name + city) ----
+
+SELECT '=== 2F: Duplicate customers flagged ===' AS info;
+SELECT c1.customer_id, c1.customer_name, c1.city_id, ci.city_name,
+       'DUPLICATE — review needed' AS flag
+FROM customers c1
+JOIN customers c2 ON c1.customer_name = c2.customer_name
+    AND c1.city_id = c2.city_id
+    AND c1.customer_id > c2.customer_id
+JOIN city ci ON c1.city_id = ci.city_id
+ORDER BY c1.customer_name;
