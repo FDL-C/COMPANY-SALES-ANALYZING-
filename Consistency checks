@@ -1,0 +1,45 @@
+ ---- 2D: CONSISTENCY CHECKS ----
+
+SELECT '=== 2D-1: city_rank vs city count (should cover 1 to 14) ===' AS check_name;
+SELECT 
+    COUNT(*) AS total_cities,
+    MIN(city_rank) AS min_rank,
+    MAX(city_rank) AS max_rank,
+    COUNT(DISTINCT city_rank) AS distinct_ranks
+FROM city;
+
+SELECT '=== 2D-2: Check for duplicate city names ===' AS check_name;
+SELECT city_name, COUNT(*) AS cnt
+FROM city 
+GROUP BY city_name 
+HAVING cnt > 1;
+SELECT 'No duplicate city names' AS result WHERE NOT EXISTS (
+    SELECT 1 FROM city GROUP BY city_name HAVING COUNT(*)>1);
+
+SELECT '=== 2D-3: Check duplicate customer names (same name, same city) ===' AS check_name;
+SELECT customer_name, city_id, COUNT(*) AS cnt
+FROM customers
+GROUP BY customer_name, city_id
+HAVING cnt > 1
+LIMIT 10;
+
+SELECT '=== 2D-4: Customers with same name across different cities ===' AS check_name;
+SELECT customer_name, COUNT(DISTINCT city_id) AS cities_count
+FROM customers
+GROUP BY customer_name
+HAVING cities_count > 1
+LIMIT 8;
+
+SELECT '=== 2D-5: Ratings below 4 — potential dissatisfied customers ===' AS check_name;
+SELECT rating, COUNT(*) AS num_sales,
+       ROUND(AVG(total),2) AS avg_sale_value
+FROM sales
+WHERE rating <= 3
+GROUP BY rating
+ORDER BY rating;
+
+SELECT '=== 2D-6: Outlier totals (outside expected product price range) ===' AS check_name;
+SELECT MIN(total) AS min_total, 
+MAX(total) AS max_total,
+ROUND(AVG(total),2) AS avg_total
+FROM sales;
