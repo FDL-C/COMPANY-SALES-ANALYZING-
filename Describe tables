@@ -1,0 +1,90 @@
+sqlite3 -column -header coffee.db << 'EOF'
+
+-- =====================================================
+-- TASK 1-A: DESCRIBE city TABLE
+-- =====================================================
+-- SELECT '--- city: row count ---' AS info;
+SELECT COUNT(*) AS total_rows FROM city;
+
+-- SELECT '--- city: sample data ---' AS info;
+SELECT * FROM city;
+
+-- SELECT '--- city: value ranges ---' AS info;
+SELECT 
+    MIN(population) AS min_pop, MAX(population) AS max_pop,
+    MIN(estimated_rent) AS min_rent, MAX(estimated_rent) AS max_rent,
+    MIN(city_rank) AS min_rank, MAX(city_rank) AS max_rank
+FROM city;
+
+EOF
+-- =====================================================
+-- TASK 1-B: DESCRIBE products TABLE
+-- =====================================================
+-- SELECT '--- products: row count ---' AS info;
+SELECT COUNT(*) AS total_rows FROM products;
+
+--  SELECT '--- products: sample data ---' AS info;
+SELECT * FROM products LIMIT 8;
+
+-- SELECT '--- products: price stats ---' AS info;
+SELECT 
+    MIN(price) AS min_price,
+    MAX(price) AS max_price,
+    ROUND(AVG(price),2) AS avg_price,
+    COUNT(DISTINCT price) AS distinct_prices
+FROM products;
+
+-- =====================================================
+-- TASK 1-C: DESCRIBE customers TABLE
+-- =====================================================
+-- SELECT '--- customers: row count ---' AS info;
+SELECT COUNT(*) AS total_rows FROM customers;
+
+-- SELECT '--- customers: sample data ---' AS info;
+SELECT * FROM customers 
+LIMIT 8;
+
+-- SELECT '--- customers per city ---' AS info;
+SELECT c.city_name, COUNT(cu.customer_id) AS num_customers
+FROM customers cu
+JOIN city c ON cu.city_id = c.city_id
+GROUP BY c.city_name
+ORDER BY num_customers DESC;
+
+EOF
+-- =====================================================
+-- TASK 1-D: DESCRIBE sales TABLE
+-- =====================================================
+SELECT '--- sales: row count ---' AS info;
+SELECT COUNT(*) AS total_rows FROM sales;
+
+SELECT '--- sales: sample data (first 8 rows) ---' AS info;
+SELECT * FROM sales
+LIMIT 8;
+
+SELECT '--- sales: date range ---' AS info;
+SELECT 
+    MIN(sale_date) AS first_sale,
+    MAX(sale_date) AS last_sale,
+    COUNT(DISTINCT sale_date) AS distinct_dates,
+    COUNT(DISTINCT customer_id) AS distinct_customers,
+    COUNT(DISTINCT product_id) AS distinct_products
+FROM sales;
+
+SELECT '--- sales: rating distribution ---' AS info;
+SELECT rating, COUNT(*) AS count,
+       ROUND(COUNT(*)*100.0/(SELECT COUNT(*) FROM sales),2) AS pct
+FROM sales
+GROUP BY rating
+ORDER BY rating;
+
+SELECT '--- sales: revenue by year ---' AS info;
+SELECT 
+    SUBSTR(sale_date,1,4) AS year,
+    COUNT(*) AS transactions,
+    SUM(total) AS total_revenue
+FROM sales
+GROUP BY year
+ORDER BY year;
+
+EOF
