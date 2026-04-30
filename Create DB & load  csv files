@@ -1,0 +1,86 @@
+python3 << 'PYEOF'
+import sqlite3
+import csv
+
+conn = sqlite3.connect('coffee.db')
+cur = conn.cursor()
+
+# Drop if exists
+for t in ['sales','customers','products','city']:
+    cur.execute(f"DROP TABLE IF EXISTS {t}")
+
+# city
+cur.execute("""
+CREATE TABLE city (
+    city_id INTEGER PRIMARY KEY,
+    city_name TEXT,
+    population INTEGER,
+    estimated_rent INTEGER,
+    city_rank INTEGER
+)""")
+
+# products
+cur.execute("""
+CREATE TABLE products (
+    product_id INTEGER PRIMARY KEY,
+    product_name TEXT,
+    price INTEGER
+)""")
+
+# customers
+cur.execute("""
+CREATE TABLE customers (
+    customer_id INTEGER PRIMARY KEY,
+    customer_name TEXT,
+    city_id INTEGER
+)""")
+
+# sales
+cur.execute("""
+CREATE TABLE sales (
+    sale_id INTEGER PRIMARY KEY,
+    sale_date TEXT,
+    product_id INTEGER,
+    customer_id INTEGER,
+    total INTEGER,
+    rating INTEGER
+)""")
+
+# Load city
+with open('city__1_.csv') as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        cur.execute("INSERT INTO city VALUES (?,?,?,?,?)",
+            (row['city_id'], row['city_name'], row['population'], row['estimated_rent'], row['city_rank']))
+
+# Load products
+with open('products.csv') as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        cur.execute("INSERT INTO products VALUES (?,?,?)",
+            (row['product_id'], row['product_name'], row['price']))
+
+# Load customers
+with open('customers.csv') as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        cur.execute("INSERT INTO customers VALUES (?,?,?)",
+            (row['customer_id'], row['customer_name'], row['city_id']))
+
+# Load sales
+with open('sales.csv') as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        cur.execute("INSERT INTO sales VALUES (?,?,?,?,?,?)",
+            (row['sale_id'], row['sale_date'], row['product_id'], row['customer_id'], row['total'], row['rating']))
+
+conn.commit()
+
+# Verify
+for t in ['city','products','customers','sales']:
+    cur.execute(f"SELECT COUNT(*) FROM {t}")
+    print(f"{t}: {cur.fetchone()[0]} rows")
+
+conn.close()
+print("Done!")
+PYEOF
