@@ -1,0 +1,60 @@
+-- ---- 2C: DATA INTEGRITY CHECKS ----
+
+SELECT '=== 2C-1: Orphan sales (product_id not in products) ===' AS check_name;
+SELECT DISTINCT s.product_id
+FROM sales s
+LEFT JOIN products p ON s.product_id = p.product_id
+WHERE p.product_id IS NULL;
+SELECT 'All product_ids are valid' AS result WHERE NOT EXISTS (
+    SELECT 1 FROM sales s LEFT JOIN products p ON s.product_id=p.product_id
+    WHERE p.product_id IS NULL);
+
+SELECT '=== 2C-2: Orphan sales (customer_id not in customers) ===' AS check_name;
+SELECT DISTINCT s.customer_id
+FROM sales s
+LEFT JOIN customers c ON s.customer_id = c.customer_id
+WHERE c.customer_id IS NULL;
+SELECT 'All customer_ids are valid' AS result WHERE NOT EXISTS (
+    SELECT 1 FROM sales s LEFT JOIN customers c ON s.customer_id=c.customer_id
+    WHERE c.customer_id IS NULL);
+
+SELECT '=== 2C-3: Orphan customers (city_id not in city) ===' AS check_name;
+SELECT customer_id, customer_name, city_id
+FROM customers
+WHERE city_id NOT IN (SELECT city_id FROM city);
+SELECT 'All customer city_ids are valid' AS result WHERE NOT EXISTS (
+    SELECT 1 FROM customers WHERE city_id NOT IN (SELECT city_id FROM city));
+
+SELECT '=== 2C-4: Sales with total mismatch (total != product price) ===' AS check_name;
+SELECT s.sale_id, s.product_id, s.total AS sale_total, p.price AS product_price
+FROM sales s
+JOIN products p ON s.product_id = p.product_id
+WHERE s.total != p.price
+LIMIT 10;
+SELECT 'All totals match product prices' AS result WHERE NOT EXISTS (
+    SELECT 1 FROM sales s JOIN products p ON s.product_id=p.product_id
+    WHERE s.total != p.price);
+
+SELECT '=== 2C-5: Invalid ratings (should be 1-5) ===' AS check_name;
+SELECT sale_id, rating FROM sales WHERE rating < 1 OR rating > 5 LIMIT 5;
+SELECT 'All ratings are in valid range (1-5)' AS result WHERE NOT EXISTS (
+    SELECT 1 FROM sales WHERE rating < 1 OR rating > 5);
+
+SELECT '=== 2C-6: Invalid date formats ===' AS check_name;
+SELECT sale_id, sale_date FROM sales
+WHERE sale_date NOT LIKE '____-__-__'
+   OR sale_date < '2000-01-01'
+LIMIT 5;
+SELECT 'All dates are valid format' AS result WHERE NOT EXISTS (
+    SELECT 1 FROM sales WHERE sale_date NOT LIKE '____-__-__' OR sale_date < '2000-01-01');
+
+SELECT '=== 2C-7: Negative or zero values ===' AS check_name;
+SELECT 'products_negative_price' AS field, COUNT(*) AS count
+FROM products WHERE price <= 0
+UNION ALL
+SELECT 'sales_negative_total', COUNT(*) FROM sales WHERE total <= 0
+UNION ALL
+SELECT 'city_negative_population', COUNT(*) FROM city WHERE population <= 0
+UNION ALL
+SELECT 'city_negative_rent', COUNT(*) FROM city WHERE estimated_rent <= 0;
+
