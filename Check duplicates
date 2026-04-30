@@ -1,0 +1,51 @@
+- =====================================================
+-- TASK 2: DATA CLEANING
+-- =====================================================
+
+-- ---- 2A: CHECK DUPLICATES ----
+
+SELECT '=== 2A-1: Duplicate city_id in city ===' AS check_name;
+SELECT city_id, COUNT(*) AS cnt
+FROM city
+GROUP BY city_id 
+HAVING cnt > 1;
+SELECT 'No duplicates found' AS result WHERE NOT EXISTS (
+    SELECT 1 FROM city GROUP BY city_id HAVING COUNT(*)>1);
+
+SELECT '=== 2A-2: Duplicate product_id in products ===' AS check_name;
+SELECT product_id, COUNT(*) AS cnt
+FROM products 
+GROUP BY product_id 
+HAVING cnt > 1;
+SELECT 'No duplicates found' AS result WHERE NOT EXISTS (
+    SELECT 1 FROM products GROUP BY product_id HAVING COUNT(*)>1);
+
+SELECT '=== 2A-3: Duplicate customer_id in customers ===' AS check_name;
+SELECT customer_id, COUNT(*) AS cnt
+FROM customers 
+GROUP BY customer_id 
+HAVING cnt > 1;
+SELECT 'No duplicates found' AS result WHERE NOT EXISTS (
+    SELECT 1 FROM customers GROUP BY customer_id HAVING COUNT(*)>1);
+
+SELECT '=== 2A-4: Duplicate sale_id in sales ===' AS check_name;
+SELECT sale_id, COUNT(*) AS cnt
+FROM sales 
+GROUP BY sale_id 
+HAVING cnt > 1;
+SELECT 'No duplicates found' AS result WHERE NOT EXISTS (
+    SELECT 1 FROM sales GROUP BY sale_id HAVING COUNT(*)>1);
+
+SELECT '=== 2A-5: Fully duplicate rows in sales ===' AS check_name;
+SELECT sale_date, product_id, customer_id, total, rating,
+       COUNT(*) AS cnt
+FROM sales
+GROUP BY sale_date, product_id, customer_id, total, rating
+HAVING cnt > 1
+LIMIT 10;
+SELECT 'No fully duplicate rows' AS result WHERE NOT EXISTS (
+    SELECT 1 FROM sales
+    GROUP BY sale_date, product_id, customer_id, total, rating
+    HAVING COUNT(*)>1);
+
+EOF
