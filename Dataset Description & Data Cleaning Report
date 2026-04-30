@@ -1,0 +1,376 @@
+# Dataset Description & Data Cleaning Report
+### Coffee Business Database — SQL Analysis
+
+---
+
+##  TASK 1: DESCRIBE THE 4 DATASETS
+
+---
+
+### TABLE 1: `city`
+**Purpose:** Reference table for 14 Syrian cities where customers are located.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| city_id | INTEGER (PK) | Unique city identifier |
+| city_name | TEXT | Arabic name of the city |
+| population | INTEGER | City population |
+| estimated_rent | INTEGER | Average monthly rent (currency units) |
+| city_rank | INTEGER | Rank by importance/size (1 = highest) |
+
+**SQL Query:**
+SELECT COUNT(*) AS total_rows 
+FROM city;
+SELECT * FROM city;
+SELECT MIN(population) AS min_pop,
+MAX(population) AS max_pop,
+MIN(estimated_rent) AS min_rent, 
+MAX(estimated_rent) AS max_rent
+FROM city;
+```
+
+**Sample Output:**
+```
+total_rows: 14
+
+city_id  city_name    population  estimated_rent  city_rank
+-------  -----------  ----------  --------------  ---------
+1        دمشق         2,800,000   28,000          2
+2        ريف دمشق     3,600,000   18,000          1
+3        حلب          3,600,000   25,000          3
+4        حمص          2,000,000   16,000          4
+5        حماة         1,700,000   14,000          5
+...
+
+min_pop: 200,000  |  max_pop: 3,600,000
+min_rent: 7,000   |  max_rent: 28,000
+```
+
+**Key Notes:**
+- 14 cities total, ranked 1–14
+- Damascus suburbs (ريف دمشق) has the highest population but rank #1
+- Rent ranges from 7,000 to 28,000 — Damascus city has the highest rent
+
+---
+
+### TABLE 2: `products`
+**Purpose:** Product catalog with 28 coffee-related items.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| product_id | INTEGER (PK) | Unique product identifier |
+| product_name | TEXT | Name of the product |
+| price | INTEGER | Price in local currency |
+
+**SQL Query:**
+SELECT COUNT(*) AS total_rows FROM products;
+SELECT * FROM products LIMIT 8;
+SELECT MIN(price) AS min_price, MAX(price) AS max_price,
+       ROUND(AVG(price),2) AS avg_price, COUNT(DISTINCT price) AS distinct_prices
+FROM products;
+```
+
+**Sample Output:**
+```
+total_rows: 28
+
+product_id  product_name                        price
+----------  ----------------------------------  -----
+1           Ground Espresso Coffee (250g)       350
+2           Cold Brew Coffee Pack (6 Bottles)   900
+3           Instant Coffee Powder (100g)        250
+4           Coffee Beans (500g)                 600
+5           Coffee Drip Bags (10 Bags)          450
+6           French Press Coffee Set             1200
+7           Specialty Coffee Subscription       1500
+8           Flavored Coffee Pods (Pack of 10)   750
+
+min_price: 200  |  max_price: 1,800  |  avg_price: 604.29
+```
+
+**Key Notes:**
+- 28 products: actual coffee items (products 1–13) + accessories/merchandise (14–28)
+- Price range: 200 (Personalized Coffee Spoon) to 1,800 (Coffee Gift Hamper)
+- Average price: 604 units
+
+---
+
+### TABLE 3: `customers`
+**Purpose:** 497 registered customers linked to cities.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| customer_id | INTEGER (PK) | Unique customer identifier |
+| customer_name | TEXT | Full customer name |
+| city_id | INTEGER (FK → city) | City where customer lives |
+
+**SQL Query:**
+SELECT COUNT(*) AS total_rows FROM customers;
+SELECT * FROM customers LIMIT 8;
+SELECT c.city_name, COUNT(cu.customer_id) AS num_customers
+FROM customers cu
+JOIN city c ON cu.city_id = c.city_id
+GROUP BY c.city_name
+ORDER BY num_customers DESC;
+```
+
+**Sample Output:**
+```
+total_rows: 497
+
+customer_id  customer_name    city_id
+-----------  ---------------  -------
+1            Aarav Agarwal    1
+2            Aarav Pandey     1
+3            Aditi Gupta      1
+
+Customers per city:
+customer_num   city_name 
+----------  -------------
+حمص         69
+حماة        68
+حلب         52
+ريف دمشق    42
+دمشق        39
+طرطوس       35
+```
+
+**Key Notes:**
+- 497 total customers across all 14 cities
+- Homs (حمص) and Hama (حماة) have the most customers (~69 and 68)
+
+
+---
+
+### TABLE 4: `sales`
+**Purpose:** Transaction records — 10,388 sales over ~2 years.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| sale_id | INTEGER (PK) | Unique sale identifier |
+| sale_date | TEXT | Date of sale (YYYY-MM-DD) |
+| product_id | INTEGER (FK → products) | Product sold |
+| customer_id | INTEGER (FK → customers) | Customer who bought |
+| total | INTEGER | Sale amount (= product price) |
+| rating | INTEGER | Customer rating (1–5) 
+
+**SQL Query:**
+SELECT COUNT(*) AS total_rows FROM sales;
+SELECT MIN(sale_date) AS first_sale, MAX(sale_date) AS last_sale,
+       COUNT(DISTINCT customer_id) AS distinct_customers,
+       COUNT(DISTINCT product_id) AS distinct_products
+FROM sales;
+SELECT rating, COUNT(*) AS count,
+       ROUND(COUNT(*)*100.0/(SELECT COUNT(*) FROM sales),2) AS pct
+FROM sales 
+GROUP BY rating 
+ORDER BY rating;
+SELECT SUBSTR(sale_date,1,4) AS year, COUNT(*) AS transactions, SUM(total) AS revenue
+FROM sales GROUP BY year;
+```
+
+**Sample Output:**
+```
+total_rows: 10,388
+
+first_sale: 2023-01-01  |  last_sale: 2024-10-01
+distinct_customers: 497  |  distinct_products: 28
+
+Rating Distribution:
+rating  count   pct
+------  ------  -----
+2       1,293   12.45%
+3       1,357   13.06%
+4       3,893   37.48%
+5       3,845   37.01%
+
+Revenue by Year:
+year   transactions  total_revenue
+-----  ------------  -------------
+2023   6,207         3,920,300
+2024   4,181         2,149,890
+```
+
+**Key Notes:**
+- Date range: Jan 2023 – Oct 2024 (21 months)
+- All 497 customers and all 28 products appear in sales
+- 74.5% of ratings are 4 or 5 — high satisfaction
+- 2023 generated more revenue (6,207 sales vs 4,181 in partial 2024)
+
+---
+
+## TASK 2: DATA CLEANING
+
+### 2A — Duplicate Check
+
+**SQL Query:**
+-- Primary key duplicates
+SELECT sale_id, COUNT(*) AS cnt
+FROM sales GROUP BY sale_id HAVING cnt > 1;
+
+-- Fully duplicate rows (same content)
+SELECT sale_date, product_id, customer_id, total, rating, COUNT(*) AS cnt
+FROM sales
+GROUP BY sale_date, product_id, customer_id, total, rating
+HAVING cnt > 1 LIMIT 10;
+```
+
+**Output:**
+```
+Primary key duplicates: NONE in any table ✅
+
+Fully duplicate rows in sales (sample):
+sale_date   product_id  customer_id  total  rating  cnt
+----------  ----------  -----------  -----  ------  ---
+2023-08-25  24          42           500    4       2
+2023-09-01  24          45           500    5       2
+2023-09-01  24          205          500    2       2
+...
+Total exact duplicate rows: 32
+```
+
+**Finding:** 32 fully duplicate rows found in `sales` table.
+
+---
+
+###  2B — Missing Values (NULL) Check
+
+**SQL Query:**
+```sql
+SELECT 
+    SUM(CASE WHEN sale_id IS NULL THEN 1 ELSE 0 END) AS null_sale_id,
+    SUM(CASE WHEN sale_date IS NULL OR sale_date='' THEN 1 ELSE 0 END) AS null_date,
+    SUM(CASE WHEN product_id IS NULL THEN 1 ELSE 0 END) AS null_product_id,
+    SUM(CASE WHEN customer_id IS NULL THEN 1 ELSE 0 END) AS null_customer_id,
+    SUM(CASE WHEN total IS NULL THEN 1 ELSE 0 END) AS null_total,
+    SUM(CASE WHEN rating IS NULL THEN 1 ELSE 0 END) AS null_rating
+FROM sales;
+```
+
+**Output:**
+```
+null_sale_id  null_date  null_product_id  null_customer_id  null_total  null_rating
+------------  ---------  ---------------  ----------------  ----------  -----------
+0             0          0                0                 0           0
+```
+
+**Finding:**  **No missing values in any table** — all 4 tables are complete.
+
+---
+
+###  2C — Data Integrity Check
+
+**SQL Query:**
+```sql
+-- Orphan records check
+SELECT COUNT(*) AS orphan_sales_bad_product
+FROM sales s LEFT JOIN products p ON s.product_id = p.product_id
+WHERE p.product_id IS NULL;
+
+-- Total mismatch check
+SELECT s.sale_id, s.total AS sale_total, p.price AS product_price
+FROM sales s JOIN products p ON s.product_id = p.product_id
+WHERE s.total != p.price LIMIT 5;
+
+-- Invalid ratings
+SELECT sale_id, rating FROM sales WHERE rating < 1 OR rating > 5;
+```
+
+**Output:**
+```
+Orphan sales (bad product_id):    0 ✅
+Orphan sales (bad customer_id):   0 ✅
+Orphan customers (bad city_id):   0 ✅
+Total mismatches (total ≠ price): 0 ✅
+Invalid ratings (outside 1–5):    0 ✅
+Invalid date formats:             0 ✅
+Negative/zero values:             0 ✅
+```
+
+**Finding:** ✅ **Full referential integrity** — all foreign keys are valid and all business rules are respected.
+
+---
+
+### ✅ 2D — Consistency Check
+
+**SQL Query:**
+```sql
+-- Duplicate customer names in same city
+SELECT customer_name, city_id, COUNT(*) AS cnt
+FROM customers
+GROUP BY customer_name, city_id
+HAVING cnt > 1;
+```
+
+**Output:**
+```
+customer_name    city_id    cnt     city_name
+---------------  -------  ---------  ---
+Arjun Gupta      4        حمص        2
+Krishna Agarwal  4        حمص        2
+Krishna Nair     13       السويداء   2
+Mira Gupta       4        حمص        2
+Mira Mehta       6        الحسكة     2
+Mira Reddy       6        الحسكة     2
+Navya Desai      11       الرقة      2
+Navya Pandey     7        إدلب       2
+```
+
+**Finding:**  **8 customer names appear twice in the same city** — likely data entry duplicates. These need manual review to confirm whether they are truly different people or duplicate entries.
+
+---
+
+### ✅ 2E — Cleaning Action: Remove Duplicate Sales Rows
+
+**SQL Query:**
+```sql
+-- Keep only the lowest sale_id per duplicate group
+CREATE TABLE sales_clean AS
+SELECT * FROM sales
+WHERE sale_id IN (
+    SELECT MIN(sale_id)
+    FROM sales
+    GROUP BY sale_date, product_id, customer_id, total, rating
+);
+```
+
+**Output:**
+```
+table_name        row_count
+----------------  ---------
+Original sales    10,388
+Cleaned sales     10,356
+Rows removed:     32
+```
+
+---
+
+###  Final Data Quality Summary
+
+| Table | Total Rows | NULL Values | Issues Found | Status |
+|-------|-----------|-------------|--------------|--------|
+| `city` | 14 | 0 | None | ✅ CLEAN |
+| `products` | 28 | 0 | None | ✅ CLEAN |
+| `customers` | 497 | 0 | 8 duplicate names (same city) |  REVIEW NEEDED |
+| `sales` (original) | 10,388 | 0 | 32 exact duplicate rows | 🔧 FIXED |
+| `sales_clean` | 10,356 | 0 | None | ✅ CLEAN |
+
+**Referential Integrity:**
+| Relationship | Orphan Records |
+|---|---|
+| sales → products | 0 ✅ |
+| sales → customers | 0 ✅ |
+| customers → city | 0 ✅ |
+
+---
+
+## 📌 Recommendations
+
+1. **Use `sales_clean`** (10,356 rows) for all future analysis — 32 duplicate rows removed.
+2. **Manually verify 8 duplicate customer names** in the same city to confirm if they are truly different people or data entry errors.
+3. **Add a UNIQUE constraint** on `(sale_date, product_id, customer_id)` in the sales table to prevent future duplicates.
+4. **Consider adding a `created_at` timestamp** to the sales table for better audit tracking.
+5. **The `rating` column has values 2–5 only** — consider whether rating=1 should exist or if the scale starts at 2.
+
+---
+*Generated using SQLite — Coffee Business Database Analysis*
