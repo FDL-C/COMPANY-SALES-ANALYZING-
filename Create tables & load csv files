@@ -1,0 +1,40 @@
+-- Create tables
+CREATE TABLE IF NOT EXISTS city (
+    city_id INTEGER PRIMARY KEY,
+    city_name TEXT,
+    population INTEGER,
+    estimated_rent INTEGER,
+    city_rank INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS products (
+    product_id INTEGER PRIMARY KEY,
+    product_name TEXT,
+    price INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS customers (
+    customer_id INTEGER PRIMARY KEY,
+    customer_name TEXT,
+    city_id INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS sales (
+    sale_id INTEGER PRIMARY KEY,
+    sale_date TEXT,
+    product_id INTEGER,
+    customer_id INTEGER,
+    total INTEGER,
+    rating INTEGER
+);
+
+-- Load CSV data
+.mode csv
+.import --skip 1 city__1_.csv city
+.import --skip 1 products.csv products
+.import --skip 1 customers.csv customers
+.import --skip 1 sales.csv sales
+
+.print "Tables loaded successfully"
+.tables
+EOF
