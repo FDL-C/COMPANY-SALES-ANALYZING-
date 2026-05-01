@@ -179,7 +179,7 @@ ORDER BY avg_sale_per_customer DESC;
 
 **Result:**
 
-| city_name | avg_sale_per_customer |
+| avg_sale_per_customer |  |  city_name
 |-----------|----------------------|
 | دير الزور | 611.96 |
 | القنيطرة | 599.96 |
@@ -240,7 +240,7 @@ ORDER BY city_name, rn;
 
 **Result:**
 
-| city_name | rank | product_name | units_sold |
+| rank | city_name | product_name | units_sold |
 |-----------|------|--------------|-----------|
 | إدلب | 1 | Instant Coffee Powder (100g) | 36 |
 | إدلب | 2 | Cold Brew Coffee Pack (6 Bottles) | 28 |
@@ -303,7 +303,7 @@ ORDER BY unique_customers DESC;
 
 **Result:**
 
-| city_name | unique_customers |
+| unique_customers | city_name |
 |-----------|----------------|
 | حمص | 69 |
 | حماة | 68 |
@@ -341,7 +341,7 @@ ORDER BY avg_sale_per_customer DESC;
 
 **Result:**
 
-| city_name | avg_sale_per_customer | avg_rent | sale_to_rent_ratio |
+| sale_to_rent_ratio | avg_sale_per_customer | avg_rent |  city_name|
 |-----------|----------------------|----------|--------------------|
 | دير الزور | 611.96 | 10,000 | 0.06 |
 | القنيطرة | 599.96 | 7,000 | 0.09 |
