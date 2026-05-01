@@ -1,0 +1,466 @@
+# ☕ Company Sales Database — Schema Design & SQL Analysis
+
+---
+
+## 1. DATABASE SCHEMA DESIGN
+
+### Entity-Relationship Overview
+
+```
+city ──< customers ──< sales >── products
+
+### Table Definitions (DDL)
+
+-- Table 1: city
+CREATE TABLE city (
+    city_id        INTEGER PRIMARY KEY,
+    city_name      VARCHAR(100) NOT NULL,
+    population     INTEGER NOT NULL,
+    estimated_rent INTEGER NOT NULL,
+    city_rank      INTEGER
+);
+
+-- Table 2: customers
+CREATE TABLE customers (
+    customer_id   INTEGER PRIMARY KEY,
+    customer_name VARCHAR(100) NOT NULL,
+    city_id       INTEGER NOT NULL,
+    FOREIGN KEY (city_id) REFERENCES city(city_id)
+);
+
+-- Table 3: products
+CREATE TABLE products (
+    product_id   INTEGER PRIMARY KEY,
+    product_name VARCHAR(150) NOT NULL,
+    price        INTEGER NOT NULL
+);
+
+-- Table 4: sales
+CREATE TABLE sales (
+    sale_id     INTEGER PRIMARY KEY,
+    sale_date   DATE NOT NULL,
+    product_id  INTEGER NOT NULL,
+    customer_id INTEGER NOT NULL,
+    total       INTEGER NOT NULL,
+    rating      INTEGER CHECK(rating BETWEEN 1 AND 5),
+    FOREIGN KEY (product_id)  REFERENCES products(product_id),
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
+);
+```
+
+
+
+### Table Summary
+
+| Table | Rows | Description |
+|-------|------|-------------|
+| city | 14 | Syrian cities with population & rent |
+| customers | 497 | Customers linked to a city |
+| products | 28 | Coffee products with prices |
+| sales | 10,388 | All transactions (2023–2024) |
+
+---
+
+## 2. SQL QUERIES & RESULTS
+
+### Query 1 — Coffee Consumers Count
+*How many people in each city are estimated to consume coffee, given that 25% of the population does?*
+
+```sql
+SELECT 
+    city_name,
+    population,
+    ROUND(population * 0.25) AS estimated_coffee_consumers
+FROM city
+ORDER BY estimated_coffee_consumers DESC;
+```
+
+**Result:**
+
+| estimated_coffee_consumers | population |  |city_name
+|-----------|-----------|--------------------------|
+| ريف دمشق | 3,600,000 | 900,000 |
+| حلب | 3,600,000 | 900,000 |
+| دمشق | 2,800,000 | 700,000 |
+| حمص | 2,000,000 | 500,000 |
+| حماة | 1,700,000 | 425,000 |
+| الحسكة | 1,500,000 | 375,000 |
+| إدلب | 1,500,000 | 375,000 |
+| دير الزور | 1,300,000 | 325,000 |
+| اللاذقية | 1,100,000 | 275,000 |
+| درعا | 1,100,000 | 275,000 |
+| الرقة | 1,000,000 | 250,000 |
+| طرطوس | 900,000 | 225,000 |
+| السويداء | 800,000 | 200,000 |
+| القنيطرة | 200,000 | 50,000 |
+
+---
+
+### Query 2 — Total Revenue from Coffee Sales (Last Quarter 2023)
+*Total revenue from Oct 1 – Dec 31, 2023.*
+
+```sql
+SELECT 
+    SUM(CAST(s.total AS INTEGER)) AS total_revenue_last_q_2023
+FROM sales s
+WHERE s.sale_date BETWEEN '2023-10-01' AND '2023-12-31';
+```
+
+**Result:**
+
+| total_revenue_last_q_2023 |
+|--------------------------|
+| **1,963,300** |
+
+---
+
+### Query 3 — Sales Count for Each Product
+*How many units of each product were sold, and total revenue generated.*
+
+```sql
+SELECT 
+    p.product_name,
+    COUNT(s.sale_id)             AS total_units_sold,
+    SUM(CAST(s.total AS INTEGER)) AS total_revenue
+FROM sales s
+JOIN products p ON s.product_id = p.product_id
+GROUP BY p.product_name
+ORDER BY total_units_sold DESC;
+```
+
+**Result:**
+
+| product_name | total_units_sold | total_revenue |
+|--------------|-----------------|---------------|
+| Cold Brew Coffee Pack (6 Bottles) | 1,326 | 1,193,400 |
+| Ground Espresso Coffee (250g) | 1,271 | 444,850 |
+| Instant Coffee Powder (100g) | 1,226 | 306,500 |
+| Coffee Beans (500g) | 1,218 | 730,800 |
+| Tote Bag with Coffee Design | 776 | 388,000 |
+| Vanilla Coffee Syrup (250ml) | 762 | 243,840 |
+| Cold Brew Concentrate (500ml) | 312 | 171,600 |
+| Organic Green Coffee Beans (500g) | 307 | 214,900 |
+| Coffee Art Print | 296 | 118,400 |
+| Flavored Coffee Pods (Pack of 10) | 295 | 221,250 |
+| Coffee Drip Bags (10 Bags) | 289 | 130,050 |
+| Insulated Travel Mug | 273 | 177,450 |
+| Coffee Gift Hamper | 270 | 486,000 |
+| Specialty Coffee Subscription | 258 | 387,000 |
+| Customizable Coffee Coaster Set | 258 | 64,500 |
+| French Press Coffee Set | 257 | 308,400 |
+| Caramel Syrup (250ml) | 96 | 28,800 |
+| Coffee Plant Kit (DIY) | 91 | 81,900 |
+| Coffee Bean Storage Canister | 89 | 71,200 |
+| Coffee Recipe Book | 88 | 52,800 |
+| Mocha Flavored Coffee Mix (200g) | 86 | 38,700 |
+| Personalized Coffee Spoon | 83 | 16,600 |
+| Coffee-Themed T-Shirt | 82 | 49,200 |
+| Reusable Coffee Cup (Eco-friendly) | 78 | 35,100 |
+| Glass Coffee Jar (500ml) | 77 | 23,100 |
+| Coffee-Themed Notebook | 76 | 22,800 |
+| Stainless Steel Tumbler | 75 | 37,500 |
+| Coffee Mug (Ceramic) | 73 | 25,550 |
+
+---
+
+### Query 4 — Average Sales Amount per City
+*Average transaction value per customer in each city.*
+
+```sql
+SELECT 
+    c.city_name,
+    ROUND(AVG(CAST(s.total AS INTEGER)), 2) AS avg_sale_per_customer
+FROM sales s
+JOIN customers cu ON s.customer_id = cu.customer_id
+JOIN city c       ON cu.city_id = c.city_id
+GROUP BY c.city_name
+ORDER BY avg_sale_per_customer DESC;
+```
+
+**Result:**
+
+| city_name | avg_sale_per_customer |
+|-----------|----------------------|
+| دير الزور | 611.96 |
+| القنيطرة | 599.96 |
+| اللاذقية | 599.51 |
+| إدلب | 595.11 |
+| درعا | 594.41 |
+| ريف دمشق | 589.71 |
+| حلب | 589.36 |
+| دمشق | 587.51 |
+| حمص | 583.48 |
+| حماة | 575.03 |
+| طرطوس | 574.06 |
+| الحسكة | 555.56 |
+| السويداء | 553.56 |
+| الرقة | 552.53 |
+
+---
+
+### Query 5 — City Population and Coffee Consumers
+*Full list of cities with populations and estimated coffee consumers.*
+
+```sql
+SELECT 
+    city_name,
+    population,
+    ROUND(population * 0.25) AS estimated_coffee_consumers
+FROM city
+ORDER BY population DESC;
+```
+
+*(Results same as Query 1, sorted by population — see Query 1 table above.)*
+
+---
+
+### Query 6 — Top 3 Selling Products by City
+
+```sql
+WITH ranked AS (
+    SELECT 
+        c.city_name,
+        p.product_name,
+        COUNT(s.sale_id) AS units_sold,
+        ROW_NUMBER() OVER (
+            PARTITION BY c.city_id 
+            ORDER BY COUNT(s.sale_id) DESC
+        ) AS rn
+    FROM sales s
+    JOIN customers cu ON s.customer_id = cu.customer_id
+    JOIN city c       ON cu.city_id = c.city_id
+    JOIN products p   ON s.product_id = p.product_id
+    GROUP BY c.city_id, c.city_name, p.product_id, p.product_name
+)
+SELECT city_name, rn AS rank, product_name, units_sold
+FROM ranked
+WHERE rn <= 3
+ORDER BY city_name, rn;
+```
+
+**Result:**
+
+| city_name | rank | product_name | units_sold |
+|-----------|------|--------------|-----------|
+| إدلب | 1 | Instant Coffee Powder (100g) | 36 |
+| إدلب | 2 | Cold Brew Coffee Pack (6 Bottles) | 28 |
+| إدلب | 3 | Ground Espresso Coffee (250g) | 27 |
+| الحسكة | 1 | Ground Espresso Coffee (250g) | 62 |
+| الحسكة | 2 | Instant Coffee Powder (100g) | 60 |
+| الحسكة | 3 | Cold Brew Coffee Pack (6 Bottles) | 53 |
+| الرقة | 1 | Instant Coffee Powder (100g) | 28 |
+| الرقة | 2 | Coffee Beans (500g) | 25 |
+| الرقة | 3 | Ground Espresso Coffee (250g) | 23 |
+| السويداء | 1 | Ground Espresso Coffee (250g) | 39 |
+| السويداء | 2 | Instant Coffee Powder (100g) | 29 |
+| السويداء | 3 | Cold Brew Coffee Pack (6 Bottles) | 28 |
+| القنيطرة | 1 | Instant Coffee Powder (100g) | 33 |
+| القنيطرة | 2 | Ground Espresso Coffee (250g) | 26 |
+| القنيطرة | 3 | Cold Brew Coffee Pack (6 Bottles) | 26 |
+| اللاذقية | 1 | Ground Espresso Coffee (250g) | 45 |
+| اللاذقية | 2 | Cold Brew Coffee Pack (6 Bottles) | 44 |
+| اللاذقية | 3 | Coffee Beans (500g) | 38 |
+| حلب | 1 | Cold Brew Coffee Pack (6 Bottles) | 259 |
+| حلب | 2 | Ground Espresso Coffee (250g) | 254 |
+| حلب | 3 | Instant Coffee Powder (100g) | 245 |
+| حماة | 1 | Ground Espresso Coffee (250g) | 183 |
+| حماة | 2 | Instant Coffee Powder (100g) | 170 |
+| حماة | 3 | Coffee Beans (500g) | 161 |
+| حمص | 1 | Cold Brew Coffee Pack (6 Bottles) | 178 |
+| حمص | 2 | Coffee Beans (500g) | 175 |
+| حمص | 3 | Instant Coffee Powder (100g) | 170 |
+| درعا | 1 | Coffee Beans (500g) | 48 |
+| درعا | 2 | Cold Brew Coffee Pack (6 Bottles) | 45 |
+| درعا | 3 | Ground Espresso Coffee (250g) | 41 |
+| دمشق | 1 | Cold Brew Coffee Pack (6 Bottles) | 197 |
+| دمشق | 2 | Ground Espresso Coffee (250g) | 167 |
+| دمشق | 3 | Instant Coffee Powder (100g) | 150 |
+| دير الزور | 1 | Cold Brew Coffee Pack (6 Bottles) | 40 |
+| دير الزور | 2 | Coffee Beans (500g) | 35 |
+| دير الزور | 3 | Instant Coffee Powder (100g) | 26 |
+| ريف دمشق | 1 | Cold Brew Coffee Pack (6 Bottles) | 192 |
+| ريف دمشق | 2 | Coffee Beans (500g) | 181 |
+| ريف دمشق | 3 | Instant Coffee Powder (100g) | 172 |
+| طرطوس | 1 | Cold Brew Coffee Pack (6 Bottles) | 57 |
+| طرطوس | 2 | Ground Espresso Coffee (250g) | 55 |
+| طرطوس | 3 | Coffee Beans (500g) | 50 |
+
+---
+
+### Query 7 — Customer Segmentation by City
+*Unique customers who made at least one purchase in each city.*
+
+```sql
+SELECT 
+    c.city_name,
+    COUNT(DISTINCT s.customer_id) AS unique_customers
+FROM sales s
+JOIN customers cu ON s.customer_id = cu.customer_id
+JOIN city c       ON cu.city_id = c.city_id
+GROUP BY c.city_name
+ORDER BY unique_customers DESC;
+```
+
+**Result:**
+
+| city_name | unique_customers |
+|-----------|----------------|
+| حمص | 69 |
+| حماة | 68 |
+| حلب | 52 |
+| ريف دمشق | 42 |
+| دمشق | 39 |
+| طرطوس | 35 |
+| اللاذقية | 28 |
+| درعا | 27 |
+| الحسكة | 27 |
+| السويداء | 24 |
+| دير الزور | 23 |
+| القنيطرة | 21 |
+| الرقة | 21 |
+| إدلب | 21 |
+
+---
+
+### Query 8 — Average Sale vs Rent
+*Compare average sale per customer with average rent per city.*
+
+```sql
+SELECT 
+    c.city_name,
+    ROUND(AVG(CAST(s.total AS INTEGER)), 2) AS avg_sale_per_customer,
+    CAST(c.estimated_rent AS INTEGER)       AS avg_rent,
+    ROUND(AVG(CAST(s.total AS INTEGER)) / 
+          CAST(c.estimated_rent AS INTEGER), 2) AS sale_to_rent_ratio
+FROM sales s
+JOIN customers cu ON s.customer_id = cu.customer_id
+JOIN city c       ON cu.city_id = c.city_id
+GROUP BY c.city_name, c.estimated_rent
+ORDER BY avg_sale_per_customer DESC;
+```
+
+**Result:**
+
+| city_name | avg_sale_per_customer | avg_rent | sale_to_rent_ratio |
+|-----------|----------------------|----------|--------------------|
+| دير الزور | 611.96 | 10,000 | 0.06 |
+| القنيطرة | 599.96 | 7,000 | 0.09 |
+| اللاذقية | 599.51 | 22,000 | 0.03 |
+| إدلب | 595.11 | 11,000 | 0.05 |
+| درعا | 594.41 | 9,500 | 0.06 |
+| ريف دمشق | 589.71 | 18,000 | 0.03 |
+| حلب | 589.36 | 25,000 | 0.02 |
+| دمشق | 587.51 | 28,000 | 0.02 |
+| حمص | 583.48 | 16,000 | 0.04 |
+| حماة | 575.03 | 14,000 | 0.04 |
+| طرطوس | 574.06 | 20,000 | 0.03 |
+| الحسكة | 555.56 | 12,000 | 0.05 |
+| السويداء | 553.56 | 8,500 | 0.07 |
+| الرقة | 552.53 | 9,000 | 0.06 |
+
+> **Insight:** القنيطرة has the best sale-to-rent ratio (0.09) — low rent, solid sales. دمشق and حلب have the lowest ratio (0.02) due to very high rent.
+
+---
+
+### Query 9 — Monthly Sales Growth
+
+```sql
+WITH monthly AS (
+    SELECT 
+        STRFTIME('%Y-%m', sale_date) AS month,
+        SUM(CAST(total AS INTEGER))   AS monthly_revenue
+    FROM sales
+    GROUP BY month
+),
+growth AS (
+    SELECT 
+        month,
+        monthly_revenue,
+        LAG(monthly_revenue) OVER (ORDER BY month) AS prev_month_revenue
+    FROM monthly
+)
+SELECT 
+    month,
+    monthly_revenue,
+    prev_month_revenue,
+    CASE WHEN prev_month_revenue IS NULL THEN NULL
+         ELSE ROUND((monthly_revenue - prev_month_revenue) * 100.0 
+                    / prev_month_revenue, 2)
+    END AS growth_rate_pct
+FROM growth
+ORDER BY month;
+```
+
+**Result:**
+
+| month | monthly_revenue | prev_month_revenue | growth_rate_pct |
+|-------|-----------------|--------------------|----------------|
+| 2023-01 | 183,070 | — | — |
+| 2023-02 | 179,930 | 183,070 | -1.72% |
+| 2023-03 | 211,820 | 179,930 | +17.72% |
+| 2023-04 | 189,250 | 211,820 | -10.66% |
+| 2023-05 | 207,960 | 189,250 | +9.89% |
+| 2023-06 | 182,360 | 207,960 | -12.31% |
+| 2023-07 | 215,410 | 182,360 | +18.12% |
+| 2023-08 | 158,900 | 215,410 | -26.23% |
+| 2023-09 | 428,300 | 158,900 | **+169.54%** |
+| 2023-10 | 682,500 | 428,300 | **+59.35%** |
+| 2023-11 | 709,200 | 682,500 | +3.91% |
+| 2023-12 | 571,600 | 709,200 | -19.40% |
+| 2024-01 | 385,090 | 571,600 | -32.63% |
+| 2024-02 | 446,850 | 385,090 | +16.04% |
+| 2024-03 | 512,350 | 446,850 | +14.66% |
+| 2024-04 | 125,850 | 512,350 | -75.44% |
+| 2024-05 | 167,150 | 125,850 | +32.82% |
+| 2024-06 | 116,300 | 167,150 | -30.42% |
+| 2024-07 | 114,750 | 116,300 | -1.33% |
+| 2024-08 | 136,800 | 114,750 | +19.22% |
+| 2024-09 | 140,250 | 136,800 | +2.52% |
+| 2024-10 | 4,500 | 140,250 | -96.79% (partial data) |
+
+> **Peak:** Nov 2023 (709,200). Big surge in Sep–Nov 2023. Oct 2024 drop is due to incomplete data.
+
+---
+
+### Query 10 — Market Potential Analysis (Top 3 Cities)
+*Top 3 cities by total sales, with full business context.*
+
+```sql
+SELECT 
+    c.city_name,
+    SUM(CAST(s.total AS INTEGER))   AS total_sales,
+    c.estimated_rent                AS total_rent,
+    COUNT(DISTINCT s.customer_id)   AS total_customers,
+    ROUND(c.population * 0.25)      AS estimated_coffee_consumers
+FROM sales s
+JOIN customers cu ON s.customer_id = cu.customer_id
+JOIN city c       ON cu.city_id = c.city_id
+GROUP BY c.city_id, c.city_name, c.estimated_rent, c.population
+ORDER BY total_sales DESC
+LIMIT 3;
+```
+
+**Result:**
+
+| city_name | total_sales | total_rent | total_customers | est. coffee consumers |
+|-----------|------------|------------|-----------------|----------------------|
+| حلب | 1,258,290 | 25,000 | 52 | 900,000 |
+| ريف دمشق | 944,120 | 18,000 | 42 | 900,000 |
+| دمشق | 860,110 | 28,000 | 39 | 700,000 |
+
+---
+
+## 3. KEY BUSINESS INSIGHTS
+
+| # | Insight |
+|---|---------|
+| 1 | **حلب** is the #1 revenue city (1.26M) with 900K potential consumers |
+| 2 | **Cold Brew Coffee Pack** is the top-selling product (1,326 units sold) |
+| 3 | **Peak season** was Sep–Nov 2023 with explosive growth (+169%) |
+| 4 | **القنيطرة** has the best sale-to-rent efficiency ratio (0.09) |
+| 5 | **حمص & حماة** have the highest active customer base (69 & 68 unique buyers) |
+| 6 | Total Q4 2023 revenue: **1,963,300** — strongest quarter |
+| 7 | Average sale per transaction hovers around **550–612** across all cities |
+
+---
+*Analysis covers 10,388 sales transactions across 14 Syrian cities | Jan 2023 – Oct 2024*
